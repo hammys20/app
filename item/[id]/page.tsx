@@ -13,6 +13,7 @@ type Item = {
   image?: string;
   tags?: string[];
   description?: string;
+  status?: "available" | "reserved" | "sold";
 };
 
 function money(n?: number) {
@@ -20,21 +21,29 @@ function money(n?: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-export default function ItemPage({ params }: { params: { id: string } }) {
+export default async function ItemPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
   const items = inventory as Item[];
-  const item = items.find((x) => x.id === params.id);
+  const item = items.find((x) => x.id === id);
 
   if (!item) return notFound();
 
+  const isSold = item.status === "sold";
+  const isReserved = item.status === "reserved";
+
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="container" style={{ maxWidth: 1000 }}>
       <Link
         href="/inventory"
+        className="btn"
         style={{
-          display: "inline-block",
-          color: "#FFD700",
           textDecoration: "none",
-          fontWeight: 800,
+          width: "fit-content",
           marginBottom: 14,
         }}
       >
@@ -44,40 +53,88 @@ export default function ItemPage({ params }: { params: { id: string } }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(260px, 420px) 1fr",
+          gridTemplateColumns: "minmax(280px, 420px) 1fr",
           gap: 18,
-          alignItems: "start",
         }}
       >
+        {/* Image */}
         <div
           style={{
             borderRadius: 18,
             overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.10)",
-            background: "rgba(255,255,255,0.03)",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow)",
+            background: "var(--surface)",
           }}
         >
-          <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", background: "rgba(0,0,0,0.35)" }}>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "3/4",
+              background: "rgba(15,23,42,0.04)",
+              filter: isSold ? "grayscale(0.15)" : "none",
+              opacity: isSold ? 0.85 : 1,
+            }}
+          >
+            {isSold ? (
+              <div className="badge badgeSold">SOLD</div>
+            ) : isReserved ? (
+              <div className="badge badgeReserved">RESERVED</div>
+            ) : null}
+
             {item.image ? (
-              <Image src={item.image} alt={item.name} fill sizes="420px" style={{ objectFit: "cover" }} />
+              <Image
+                src={item.image}
+                alt={item.name}
+                fill
+                sizes="420px"
+                style={{ objectFit: "cover" }}
+              />
             ) : (
-              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 0.6 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "var(--muted)",
+                }}
+              >
                 No image
               </div>
             )}
           </div>
         </div>
 
+        {/* Details */}
         <div>
-          <h1 style={{ margin: 0, fontSize: 32 }}>{item.name}</h1>
+          <h1 style={{ margin: 0, fontSize: 34, letterSpacing: -0.3 }}>
+            {item.name}
+          </h1>
 
-          <div style={{ marginTop: 10, opacity: 0.8, lineHeight: 1.6 }}>
-            <div>Set: <b>{item.set ?? "—"}</b></div>
-            <div>No: <b>{item.number ?? "—"}</b></div>
-            <div>Condition: <b>{item.condition ?? "—"}</b></div>
+          <div style={{ marginTop: 10, color: "var(--muted)", lineHeight: 1.7 }}>
+            <div>
+              Set: <b style={{ color: "var(--text)" }}>{item.set ?? "—"}</b>
+            </div>
+            <div>
+              No:{" "}
+              <b style={{ color: "var(--text)" }}>{item.number ?? "—"}</b>
+            </div>
+            <div>
+              Condition:{" "}
+              <b style={{ color: "var(--text)" }}>{item.condition ?? "—"}</b>
+            </div>
           </div>
 
-          <div style={{ marginTop: 16, fontSize: 26, fontWeight: 900, color: "#FFD700" }}>
+          <div
+            style={{
+              marginTop: 16,
+              fontSize: 28,
+              fontWeight: 900,
+              color: "var(--accent)",
+            }}
+          >
             {money(item.price)}
           </div>
 
@@ -90,9 +147,10 @@ export default function ItemPage({ params }: { params: { id: string } }) {
                     fontSize: 12,
                     padding: "6px 10px",
                     borderRadius: 999,
-                    border: "1px solid rgba(255,215,0,0.25)",
-                    color: "#FFD700",
-                    opacity: 0.95,
+                    border: "1px solid rgba(184,134,11,0.35)",
+                    background: "rgba(184,134,11,0.08)",
+                    color: "var(--accent)",
+                    fontWeight: 800,
                   }}
                 >
                   {t}
@@ -102,15 +160,15 @@ export default function ItemPage({ params }: { params: { id: string } }) {
           ) : null}
 
           {item.description ? (
-            <p style={{ marginTop: 16, opacity: 0.85, lineHeight: 1.6 }}>{item.description}</p>
+            <div className="card" style={{ padding: 14, marginTop: 16 }}>
+              <div style={{ fontWeight: 900, marginBottom: 6 }}>Notes</div>
+              <div style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+                {item.description}
+              </div>
+            </div>
           ) : null}
-
-          <div style={{ marginTop: 18, opacity: 0.75 }}>
-            (Next step: add Stripe “Buy Now” here.)
-          </div>
         </div>
       </div>
     </div>
   );
 }
-
