@@ -1,19 +1,26 @@
-import type { Metadata } from "next";
 import Header from "./components/Header";
 
-export const metadata: Metadata = {
-  title: "Hammy’s Trading",
-  description: "Trading card storefront",
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial" }}>
+      <body
+        style={{
+          margin: 0,
+          background: "#0b0b0b",
+          color: "#fff",
+          fontFamily:
+            "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
+        }}
+      >
         <Header />
-        <main style={{ padding: 16 }}>{children}</main>
+        <main style={{ padding: 24 }}>{children}</main>
       </body>
     </html>
   );
 }
+
 
