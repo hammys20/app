@@ -1,6 +1,7 @@
 import inventory from "@/data/inventory.json";
 import Image from "next/image";
 import Link from "next/link";
+import useSWR from 'swr';
 
 type Item = {
   id: string;
