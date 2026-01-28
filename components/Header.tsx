@@ -1,15 +1,56 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { fetchAuthSession, signOut } from "aws-amplify/auth";
 
 export default function Header() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadAuth() {
+      try {
+        const session = await fetchAuthSession();
+        const groups =
+          (session.tokens?.accessToken?.payload[
+            "cognito:groups"
+          ] as string[]) || [];
+
+        if (mounted) {
+          setIsSignedIn(!!session.tokens);
+          setIsAdmin(groups.includes("Admin"));
+        }
+      } catch {
+        if (mounted) {
+          setIsSignedIn(false);
+          setIsAdmin(false);
+        }
+      }
+    }
+
+    loadAuth();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleSignOut() {
+    await signOut();
+    window.location.reload();
+  }
+
   return (
     <header
       style={{
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: "rgba(247,248,250,0.9)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(27,30,36,0.88)", // neutral charcoal
+        backdropFilter: "blur(14px)",
         borderBottom: "1px solid var(--border)",
       }}
     >
@@ -42,7 +83,7 @@ export default function Header() {
             priority
             style={{
               borderRadius: 14,
-              boxShadow: "0 6px 18px rgba(15,23,42,0.15)",
+              boxShadow: "0 8px 26px rgba(0,0,0,0.7)",
             }}
           />
 
@@ -50,7 +91,7 @@ export default function Header() {
             <div
               style={{
                 fontWeight: 900,
-                letterSpacing: 0.4,
+                letterSpacing: 0.6,
                 fontSize: 16,
               }}
             >
@@ -62,7 +103,7 @@ export default function Header() {
                 fontSize: 12,
                 color: "var(--muted)",
                 marginTop: 2,
-                letterSpacing: 0.3,
+                letterSpacing: 0.35,
               }}
             >
               Premium Pokémon Cards & Live Breaks
@@ -78,7 +119,7 @@ export default function Header() {
             gap: 10,
           }}
         >
-          <Link href="/inventory" className="btn" style={{ textDecoration: "none" }}>
+          <Link href="/inventory" className="btn">
             Inventory
           </Link>
 
@@ -88,21 +129,27 @@ export default function Header() {
             rel="noopener noreferrer"
             className="btn"
             style={{
-              borderColor: "rgba(184,134,11,0.35)",
+              borderColor: "rgba(201,162,77,0.45)",
             }}
           >
             Live on Whatnot
           </Link>
 
-          <Link
-            href="/admin"
-            className="btn btnPrimary"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            Admin
-          </Link>
+          {isAdmin && (
+            <Link href="/admin" className="btn btnPrimary">
+              Admin
+            </Link>
+          )}
+
+          {isSignedIn ? (
+            <button className="btn" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          ) : (
+            <Link href="/admin" className="btn">
+              Sign In
+            </Link>
+          )}
         </nav>
       </div>
     </header>
