@@ -1,19 +1,15 @@
 "use client";
 
 import { Amplify } from "aws-amplify";
-import outputs from "../amplify_outputs.json";
-import { useEffect } from "react";
+import outputs from "@/amplify_outputs.json";
+
+// 🔒 configure ONCE at module load
+Amplify.configure(outputs, { ssr: true });
 
 export function AmplifyProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    // ✅ Runs ONLY in browser
-    Amplify.configure(outputs);
-  }, []);
-
   return <>{children}</>;
 }
-

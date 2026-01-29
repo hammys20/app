@@ -1,0 +1,13 @@
+async function checkAdmin() {
+      try {
+        const session = await fetchAuthSession();
+        const groups =
+          session.tokens?.accessToken?.payload["cognito:groups"];
+
+        if (Array.isArray(groups) && groups.includes("Admin")) {
+          router.replace("/admin");
+        }
+      } catch {
+        // user not signed in yet
+      }
+    }

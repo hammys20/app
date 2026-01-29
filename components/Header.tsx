@@ -8,6 +8,7 @@ import { fetchAuthSession, signOut } from "aws-amplify/auth";
 export default function Header() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -18,17 +19,18 @@ export default function Header() {
         const groups =
           (session.tokens?.accessToken?.payload[
             "cognito:groups"
-          ] as string[]) || [];
+          ] as string[]) ?? [];
 
-        if (mounted) {
-          setIsSignedIn(!!session.tokens);
-          setIsAdmin(groups.includes("Admin"));
-        }
+        if (!mounted) return;
+
+        setIsSignedIn(!!session.tokens);
+        setIsAdmin(groups.includes("Admin"));
       } catch {
-        if (mounted) {
-          setIsSignedIn(false);
-          setIsAdmin(false);
-        }
+        if (!mounted) return;
+        setIsSignedIn(false);
+        setIsAdmin(false);
+      } finally {
+        if (mounted) setLoaded(true);
       }
     }
 
@@ -40,7 +42,7 @@ export default function Header() {
 
   async function handleSignOut() {
     await signOut();
-    window.location.reload();
+    window.location.href = "/";
   }
 
   return (
@@ -49,7 +51,7 @@ export default function Header() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: "rgba(27,30,36,0.88)", // neutral charcoal
+        background: "rgba(27,30,36,0.88)",
         backdropFilter: "blur(14px)",
         borderBottom: "1px solid var(--border)",
       }}
@@ -124,29 +126,29 @@ export default function Header() {
           </Link>
 
           <Link
-            href="https://www.whatnot.com/s/UlNKtYo1"
+            href="https://www.whatnot.com/user/hammys_trading"
             target="_blank"
             rel="noopener noreferrer"
             className="btn"
-            style={{
-              borderColor: "rgba(201,162,77,0.45)",
-            }}
+            style={{ borderColor: "rgba(201,162,77,0.45)" }}
           >
             Live on Whatnot
           </Link>
 
-          {isAdmin && (
-            <Link href="/admin" className="btn btnPrimary">
+          {/* Admin link ONLY when signed in + Admin */}
+          {loaded && isSignedIn && isAdmin && (
+            <Link href="/admin/inventory" className="btn btnPrimary">
               Admin
             </Link>
           )}
 
-          {isSignedIn ? (
+          {/* Auth action */}
+          {loaded && isSignedIn ? (
             <button className="btn" onClick={handleSignOut}>
               Sign Out
             </button>
           ) : (
-            <Link href="/admin" className="btn">
+            <Link href="/signin" className="btn">
               Sign In
             </Link>
           )}

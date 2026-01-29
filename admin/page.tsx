@@ -1,48 +1,23 @@
-"use client";
+import Link from "next/link";
 
-import { useEffect, useState } from "react";
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>();
-
-export default function AdminPage() {
-  const [items, setItems] = useState<Schema["InventoryItem"]["type"][]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    client.models.InventoryItem.list()
-      .then(({ data }) => {
-        setItems(data ?? []);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="container">
-        <p style={{ color: "var(--muted)" }}>Loading inventory…</p>
-      </div>
-    );
-  }
-
+export default function AdminHome() {
   return (
-    <div className="container">
-      <h1>Admin Inventory</h1>
+    <div style={{ maxWidth: 800, margin: "60px auto" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 800 }}>
+        Admin Dashboard
+      </h1>
 
-      {items.length === 0 && (
-        <p style={{ color: "var(--muted)" }}>No inventory items found.</p>
-      )}
+      <p style={{ opacity: 0.7, marginTop: 8 }}>
+        Admin-only tools
+      </p>
 
-      <div style={{ display: "grid", gap: 12 }}>
-        {items.map((item) => (
-          <div key={item.id} className="card" style={{ padding: 16 }}>
-            <strong>{item.name}</strong>
-            <div style={{ color: "var(--muted)", fontSize: 14 }}>
-              Status: {item.status}
-            </div>
-          </div>
-        ))}
+      <div style={{ marginTop: 32, display: "grid", gap: 16 }}>
+        <Link href="/admin/inventory" className="btn btnPrimary">
+          Manage Inventory
+        </Link>
+
+        {/* future links */}
+        {/* <Link href="/admin/orders">Orders</Link> */}
       </div>
     </div>
   );
