@@ -67,9 +67,32 @@ export default function AdminInventoryPage() {
   }
 
   useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  let cancelled = false;
+
+  async function boot() {
+    // Wait for tokens to exist (avoids “refresh after login”)
+    for (let i = 0; i < 20; i++) {
+      try {
+        const session = await fetchAuthSession();
+        const hasTokens = !!session.tokens?.accessToken && !!session.tokens?.idToken;
+        if (hasTokens) break;
+      } catch {
+        // ignore and retry briefly
+      }
+      await new Promise((r) => setTimeout(r, 150));
+    }
+
+    if (!cancelled) {
+      await refresh();
+    }
+  }
+
+  boot();
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const filtered = useMemo(() => {
     return items.filter((i) => {
