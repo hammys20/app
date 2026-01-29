@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import BuyNowButton from "@/components/BuyNowButton";
-
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
 
-const client = generateClient<Schema>({ authMode: "apiKey" });
+const client = generateClient({ authMode: "apiKey" as const });
 
 type Item = {
   id: string;
