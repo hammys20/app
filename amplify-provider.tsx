@@ -3,13 +3,17 @@
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 
-// 🔒 configure ONCE at module load
-Amplify.configure(outputs, { ssr: true });
+let configured = false;
 
 export function AmplifyProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  if (!configured) {
+    Amplify.configure(outputs, { ssr: true });
+    configured = true;
+  }
+
   return <>{children}</>;
 }

@@ -1,6 +1,6 @@
 import "./globals.css";
-import { AmplifyProvider } from "./providers/AmplifyProvider";
-import HeaderClient from "../components/HeaderClient";
+import HeaderClient from "@/components/HeaderClient";
+import { AmplifyProvider } from "./amplify-provider";
 
 export default function RootLayout({
   children,
@@ -11,7 +11,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AmplifyProvider>
-          {children}
+          <HeaderClient />
+          <main className="container">{children}</main>
         </AmplifyProvider>
       </body>
     </html>
