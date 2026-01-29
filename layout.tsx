@@ -1,14 +1,17 @@
 import "./globals.css";
-import Header from "./components/Header";
-import { AmplifyProvider } from "./amplify-provider";
+import { AmplifyProvider } from "./providers/AmplifyProvider";
+import HeaderClient from "../components/HeaderClient";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
         <AmplifyProvider>
-          <Header />
-          <main className="container">{children}</main>
+          {children}
         </AmplifyProvider>
       </body>
     </html>

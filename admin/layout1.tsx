@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { isAdminServer } from "@/lib/auth/server-context";
+import Header from "@/app/components/Header";
 
 export default async function AdminLayout({
   children,
