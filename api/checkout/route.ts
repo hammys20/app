@@ -1,99 +1,45 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
-import { gql } from "@/lib/appsync";
+import { generateClient } from "aws-amplify/data";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2026-01-28.clover",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
-
-/* ---------- GraphQL ---------- */
-
-const GET_ITEM = /* GraphQL */ `
-  query GetInventoryItem($id: ID!) {
-    getInventoryItem(id: $id) {
-      id
-      name
-      price
-      image
-      status
-      lockExpiresAt
-    }
-  }
-`;
-
-const UPDATE_ITEM = /* GraphQL */ `
-  mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {
-    updateInventoryItem(input: $input) {
-      id
-      status
-    }
-  }
-`;
+// 👇 Cast to any so TS stops treating models as `never`
+const client = generateClient({ authMode: "apiKey" }) as any;
 
 export async function POST(req: Request) {
   const { itemId } = await req.json();
 
-  if (!itemId) {
-    return NextResponse.json({ error: "Missing itemId" }, { status: 400 });
-  }
+  // Fetch item
+  const { data: item, errors } = await client.models.InventoryItem.get({
+    id: itemId,
+  });
 
-  // 1️⃣ Fetch item
-  const data = await gql(GET_ITEM, { id: itemId });
-  const item = data.getInventoryItem;
-
-  if (!item) {
+  if (errors?.length || !item) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
 
-  const now = Date.now();
-  const lockExpires = item.lockExpiresAt
-    ? Date.parse(item.lockExpiresAt)
-    : 0;
-
-  if (item.status === "sold") {
-    return NextResponse.json({ error: "Item sold" }, { status: 409 });
-  }
-
-  if (item.status === "reserved" && lockExpires > now) {
-    return NextResponse.json({ error: "Item reserved" }, { status: 409 });
-  }
-
-  // 2️⃣ Create Stripe Checkout
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    customer_creation: "if_required",
-
+    payment_method_types: ["card"],
     line_items: [
       {
         price_data: {
           currency: "usd",
+          unit_amount: Math.round((item.price ?? 0) * 100),
           product_data: {
             name: item.name,
-            images: item.image ? [`${SITE_URL}${item.image}`] : [],
+            description: item.description ?? "",
+            images: item.image ? [item.image] : [],
           },
-          unit_amount: Math.round(item.price * 100),
         },
         quantity: 1,
       },
     ],
-
-    metadata: { itemId },
-
-    success_url: `${SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${SITE_URL}/inventory`,
-  });
-
-  // 3️⃣ Lock inventory (15 min)
-  await gql(UPDATE_ITEM, {
-    input: {
-      id: itemId,
-      status: "reserved",
-      lockExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-      lockedBySessionId: session.id,
-      stripeSessionId: session.id,
-    },
+    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cancel`,
   });
 
   return NextResponse.json({ url: session.url });

@@ -1,83 +1,60 @@
-import { NextResponse } from "next/server";
 import Stripe from "stripe";
-
-import { Amplify } from "aws-amplify";
-import outputs from "@/amplify_outputs.json";
-
+import { NextResponse } from "next/server";
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
 
-export const runtime = "nodejs";
-
-/**
- * IMPORTANT:
- * Configure Amplify at module load so generateClient has GraphQL config available.
- */
-Amplify.configure(outputs, { ssr: true });
-
-const client = generateClient<Schema>({ authMode: "apiKey" });
-
+// ✅ Must match your installed stripe types
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2026-01-28.clover",
 });
+
+// If you use Amplify Data in this route, keep this (TS-safe)
+const client = generateClient({ authMode: "apiKey" }) as any;
 
 type Item = {
   id: string;
   name: string;
   price?: number;
-  status?: string;
-  image?: string;
   description?: string;
+  image?: string;
 };
 
 export async function POST(req: Request) {
   try {
     const { itemId } = await req.json();
-    if (!itemId) {
-      return NextResponse.json({ error: "Missing itemId" }, { status: 400 });
+
+    // Example: fetch item (adjust if your file already does this differently)
+    const { data: item, errors } = await client.models.InventoryItem.get({
+      id: itemId,
+    });
+
+    if (errors?.length || !item) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
-
-    const res = await client.models.InventoryItem.get({ id: String(itemId) });
-    const item = (res.data as unknown as Item) ?? null;
-
-    if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
-
-    const isAvailable = (item.status ?? "").trim().toLowerCase() === "available";
-    if (!isAvailable) {
-      return NextResponse.json({ error: "Item not available" }, { status: 400 });
-    }
-
-    if (typeof item.price !== "number" || item.price <= 0) {
-      return NextResponse.json({ error: "Item has no price" }, { status: 400 });
-    }
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/item/${encodeURIComponent(item.id)}?canceled=1`,
+      payment_method_types: ["card"],
       line_items: [
         {
-          quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: Math.round(item.price * 100),
+            unit_amount: Math.round((item.price ?? 0) * 100),
             product_data: {
               name: item.name,
-              description: item.description || undefined,
-              // Keep images optional to avoid weirdness if URL is signed/expiring
-              // images: ...
+              description: item.description ?? "",
+              images: item.image ? [item.image] : [],
             },
           },
+          quantity: 1,
         },
       ],
-      metadata: { itemId: item.id },
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cancel`,
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (e: any) {
-    console.error("Stripe checkout error:", e);
-    return NextResponse.json({ error: e?.message || "Checkout failed" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Stripe checkout error:", err);
+    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
   }
 }

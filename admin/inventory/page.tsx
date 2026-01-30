@@ -124,8 +124,8 @@ export default function AdminInventoryPage() {
     setItems((cur) => cur.map((i) => (i.id === id ? { ...i, ...updates } : i)));
 
     try {
-      await updateInventoryItem(id, updates as any);
-    } catch (e: any) {
+      await updateInventoryItem({ id, ...(updates as any) });
+}     catch (e: any)  {
       setItems(prev);
       setError(e?.message ?? "Failed to save changes.");
     } finally {
@@ -152,7 +152,7 @@ export default function AdminInventoryPage() {
       const url = urlRes.url.toString();
 
       // Save URL into model
-      await updateInventoryItem(itemId, { image: url } as any);
+      await updateInventoryItem({ id: itemId, image: url } as any);
 
       // Update UI
       setItems((cur) => cur.map((i) => (i.id === itemId ? { ...i, image: url } : i)));
@@ -180,7 +180,7 @@ export default function AdminInventoryPage() {
         await remove({ path: pathPart });
       }
 
-      await updateInventoryItem(itemId, { image: undefined } as any);
+      await updateInventoryItem({ id: itemId, image: undefined } as any);
       setItems((cur) => cur.map((i) => (i.id === itemId ? { ...i, image: undefined } : i)));
     } catch (e: any) {
       setError(e?.message ?? "Remove image failed.");
