@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import WhatnotStatus from "@app/components/WhatnotStatus";
+import WhatnotStatus from "./components/WhatnotStatus";
 
 export default function HomePage() {
   return (
